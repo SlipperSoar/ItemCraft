@@ -85,11 +85,6 @@ namespace ItemCraft
                     // 示例：
                     // 1:2,2:1,3:1,4:1
                     var materials = content["materials"].Split(',');
-                    if (materials.Length < 2)
-                    {
-                        continue;
-                    }
-
                     var targetItem = content["target"].Split(':');
                     var targetItemId = int.Parse(targetItem[0]);
                     var targetItemAmount = int.Parse(targetItem[1]);
