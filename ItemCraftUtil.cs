@@ -2,10 +2,9 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Duckov.Economy;
-using HarmonyLib;
 using ItemStatsSystem;
-using SodaCraft.Localizations;
 
 namespace ItemCraft
 {
@@ -21,40 +20,10 @@ namespace ItemCraft
             UnityEngine.Debug.Log("【合成工具】初始化所有合成表");
             
             // 首先保证合成配方列表已初始化完毕
-            var formulas = CraftingFormulaCollection.Instance.Entries;
+            var formulaCollectionInstance = CraftingFormulaCollection.Instance;
+            var formulas = formulaCollectionInstance.Entries;
             
             var additiveCraftFormulas = new List<CraftingFormula>();
-            // 内置合成表
-            {
-                // // 粑粑*1 + 卷纸*1 = 可可奶*1
-                // additiveCraftFormulas.Add(new CraftingFormula
-                // {
-                //     id = "Food_CocoMilk",
-                //     result = new CraftingFormula.ItemEntry
-                //     {
-                //         id = 105,
-                //         amount = 1
-                //     },
-                //     cost = new Cost
-                //     {
-                //         money = 1,
-                //         items = new Cost.ItemEntry[]
-                //         {
-                //             new Cost.ItemEntry
-                //             {
-                //                 id = 938,
-                //                 amount = 1
-                //             },
-                //             new Cost.ItemEntry
-                //             {
-                //                 id = 60,
-                //                 amount = 1
-                //             }
-                //         }
-                //     },
-                //     unlockByDefault = true
-                // });
-            }
 
             // 加载所有合成表
             var currentDir = GetModPath();
@@ -67,8 +36,21 @@ namespace ItemCraft
             }
 
             // 修改合成表列表
-            var formulaListRef = AccessTools.FieldRefAccess<List<CraftingFormula>>(typeof(CraftingFormulaCollection), "list");
-            formulaListRef(CraftingFormulaCollection.Instance).AddRange(additiveCraftFormulas);
+            var listField = typeof(CraftingFormulaCollection).GetField("list", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (listField == null)
+            {
+                UnityEngine.Debug.LogError("【合成工具】无法找到 CraftingFormulaCollection.list 字段");
+                return;
+            }
+
+            var formulaList = (List<CraftingFormula>)listField.GetValue(formulaCollectionInstance);
+            if (formulaList == null)
+            {
+                UnityEngine.Debug.LogError("【合成工具】formulaList 为 null");
+                return;
+            }
+
+            formulaList.AddRange(additiveCraftFormulas);
         }
 
         public static void OnItemUsed(Item item, object obj)

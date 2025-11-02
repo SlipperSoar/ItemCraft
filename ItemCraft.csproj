@@ -14,8 +14,4 @@
         <Reference Include="$(DuckovPath)\Duckov_Data\Managed\UniTask*" />
     </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Lib.Harmony" Version="2.4.1" />
-    </ItemGroup>
-
 </Project>
