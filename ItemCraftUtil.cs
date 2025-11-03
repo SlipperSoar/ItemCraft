@@ -132,6 +132,23 @@ namespace ItemCraft
             // 路径是到游戏根目录为止
             var currentDir = Directory.GetCurrentDirectory();
             currentDir = Path.Combine(currentDir, @"Duckov_Data\Mods\ItemCraft");
+            // 确保目录都存在
+            UnityEngine.Debug.Log($"【合成工具】确保目录存在：{currentDir}");
+            if (!Directory.Exists(currentDir))
+            {
+                // 创建目录时顺带创建一个示例的csv
+                Directory.CreateDirectory(currentDir);
+                var sampleCsvFilePath = Path.Combine(currentDir, "sample.craft.csv");
+                var sampleCsvFileContent = @"
+id	target	money	materials	unlockByDefault	tags	_note
+Food_CocoMilk	105:1	0	938:1,60:1	true	WorkBenchAdvanced	可可奶
+Large_HealBox	15:1	0	16:3,136:1,89:1	true	MedicStation	大急救箱
+Item_UPhone	63:1	0	114:1,339:1	true	WorkBenchAdvanced	uPhone手机
+Item_TOMSUNG	114:1	0	63:1,339:1	true	WorkBenchAdvanced	TOMSUNG手机";
+                File.Create(sampleCsvFilePath).Close();
+                File.WriteAllText(sampleCsvFilePath, sampleCsvFileContent.TrimStart());
+            }
+
             return currentDir;
         }
 
