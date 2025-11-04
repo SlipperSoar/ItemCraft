@@ -144,7 +144,8 @@ id	target	money	materials	unlockByDefault	tags	_note
 Food_CocoMilk	105:1	0	938:1,60:1	true	WorkBenchAdvanced	可可奶
 Large_HealBox	15:1	0	16:3,136:1,89:1	true	MedicStation	大急救箱
 Item_UPhone	63:1	0	114:1,339:1	true	WorkBenchAdvanced	uPhone手机
-Item_TOMSUNG	114:1	0	63:1,339:1	true	WorkBenchAdvanced	TOMSUNG手机";
+Item_TOMSUNG	114:1	0	63:1,339:1	true	WorkBenchAdvanced	TOMSUNG手机
+Food_Cake	132:1	0	84:1,105:1,68:1	true	Cook	烹饪蛋糕";
                 File.Create(sampleCsvFilePath).Close();
                 File.WriteAllText(sampleCsvFilePath, sampleCsvFileContent.TrimStart());
             }
