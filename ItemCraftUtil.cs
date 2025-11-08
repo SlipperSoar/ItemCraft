@@ -115,6 +115,28 @@ namespace ItemCraft
                     }).ToArray();
                     var tags = content["tags"].Split(',');
                     var formulaId = content["id"];
+
+                    var notExistItems = new List<int>();
+                    // 检查配方中的物品是否存在
+                    if (!ItemStatsSystem.ItemAssetsCollection.GetPrefab(targetItemId))
+                    {
+                        notExistItems.Add(targetItemId);
+                    }
+
+                    foreach (var valueTuple in materialItems)
+                    {
+                        if (!ItemStatsSystem.ItemAssetsCollection.GetPrefab(valueTuple.Item1))
+                        {
+                            notExistItems.Add(valueTuple.Item1);
+                        }
+                    }
+
+                    // 如果存在物品不存在的，跳过该配方
+                    if (notExistItems.Any())
+                    {
+                        UnityEngine.Debug.LogWarning(LocalizeUtil.Localize(LocalizeUtil.ItemDontExist, formulaId, string.Join(",", notExistItems)));
+                        continue;
+                    }
                     
                     // UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
                     var recipe = new CraftingFormula

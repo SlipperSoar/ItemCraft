@@ -27,6 +27,9 @@ namespace ItemCraft
         /// <summary>创建示例csv文件</summary>
         public const string CreateSampleCsvFile = "CreateSampleCsvFile";
 
+        /// <summary>物品不存在</summary>
+        public const string ItemDontExist = "ItemDontExist";
+
         public const string InitCraftTables = "InitCraftTables";
         
         public const string InitItemNameTable = "InitItemNameTable";
@@ -52,6 +55,7 @@ namespace ItemCraft
             { FormulaIdAlreadyExistInOtherCsv, "The Crafting recipe [{0}] already exist in other csv table (*.craft.csv), this one in {1} invalid" },
             { FormulaIdAlreadyExistInRawList, "The Crafting recipe [{0}] already exist in game recipe list" },
             { InvalidFormulaConfig, "Invalid crafting recipe config: {0}, file: {1}" },
+            { ItemDontExist, "Invalid recipe {0}! The Item(s) not exist in game: ({1})" },
         };
         
         // 简中
@@ -65,6 +69,7 @@ namespace ItemCraft
             { FormulaIdAlreadyExistInOtherCsv, "其他DIY配方表（*.craft.csv）中已存在同名配方：{0}, {1} 中该配方无效" },
             { FormulaIdAlreadyExistInRawList, "游戏原配方列表中已存在同名配方：[{0}], 该自定义配方无效" },
             { InvalidFormulaConfig, "无效的配方配置：{0}，配置文件：{1}" },
+            { ItemDontExist, "无效的配方 {0}！ 这些物品游戏中不存在： ({1})" },
         };
         
         // 日语
@@ -78,6 +83,7 @@ namespace ItemCraft
             { FormulaIdAlreadyExistInOtherCsv, "他のDIYレシピ表（*.craft.csv）にすでに同名のレシピがあります：{0}、{1}ではそのレシピは無効です" },
             { FormulaIdAlreadyExistInRawList, "ゲームの元のレシピリストには同名のレシピが既に存在します：[{0}]、このカスタムレシピは無効です" },
             { InvalidFormulaConfig, "無効なレシピ設定：{0}、フェイル：{1}" },
+            { ItemDontExist, "無効なレシピ: {0}！これらのアイテムはゲーム内に存在しません: ({1})" },
         };
 
         #endregion
