@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using SodaCraft.Localizations;
 
 namespace ItemCraft
@@ -90,13 +91,36 @@ namespace ItemCraft
         {
             UnityEngine.Debug.Log(Localize(InitItemNameTable));
             // 由于无法直接通过道具id获取其本地化名称，故而采取此下策：预先缓存所有道具的本地化名称
+            // 顺便可以用来保存至本地文件，方便人设计配方
             itemNameTable = new Dictionary<int, string>();
-            // var allItemIds = ItemStatsSystem.ItemAssetsCollection.GetAllTypeIds(new ItemStatsSystem.ItemFilter());
             var allItemIds = ItemStatsSystem.ItemAssetsCollection.Instance.entries.Select(x => x.typeID);
             foreach (var itemId in allItemIds)
             {
                 var metaData = ItemStatsSystem.ItemAssetsCollection.GetMetaData(itemId);
                 itemNameTable.Add(itemId, metaData.DisplayName);
+            }
+
+            // 尝试加载Mod 物品
+            var dynamicEntries = typeof(ItemStatsSystem.ItemAssetsCollection).GetField("dynamicDic",
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            if (dynamicEntries == null)
+            {
+                UnityEngine.Debug.LogError($"can't find dynamicDic field");
+            }
+            else
+            {
+                var dynamicDic = dynamicEntries.GetValue(ItemStatsSystem.ItemAssetsCollection.Instance) as Dictionary<int, ItemStatsSystem.ItemAssetsCollection.DynamicEntry>;
+                if (dynamicDic == null)
+                {
+                    UnityEngine.Debug.LogError($"dynamicDic is null");
+                }
+                else
+                {
+                    foreach (var entry in dynamicDic.Select(dynamicEntry => dynamicEntry.Value))
+                    {
+                        itemNameTable.Add(entry.typeID, entry.MetaData.DisplayName);
+                    }
+                }
             }
         }
 
