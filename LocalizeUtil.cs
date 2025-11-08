@@ -9,6 +9,28 @@ namespace ItemCraft
     /// </summary>
     public static class LocalizeUtil
     {
+        #region Const
+
+        /// <summary>配方id已存在于其他自定义配方表</summary>
+        public const string FormulaIdAlreadyExistInOtherCsv = "FormulaIdAlreadyExistInOtherCsv";
+        
+        /// <summary>配方id已存在于原有的配方表</summary>
+        public const string FormulaIdAlreadyExistInRawList = "FormulaIdAlreadyExistInRawList";
+
+        /// <summary>确保要使用的目录存在</summary>
+        public const string EnsureDirectoryExist = "EnsureDirectoryExist";
+
+        /// <summary>创建示例csv文件</summary>
+        public const string CreateSampleCsvFile = "CreateSampleCsvFile";
+
+        public const string InitCraftTables = "InitCraftTables";
+        
+        public const string InitItemNameTable = "InitItemNameTable";
+        
+        private const string ModName = "ItemCraft";
+
+        #endregion
+        
         #region Properties
 
         public static IDictionary<int, string> ItemNameTable => itemNameTable;
@@ -18,25 +40,37 @@ namespace ItemCraft
         // 英语
         private static Dictionary<string, string> enLocalizeDictionary = new Dictionary<string, string>()
         {
-            { "ItemCraftRecipeNotFound", "Can't Craft Item: {0}" },
+            { ModName, "[More DIY ItemCraft Mod]" },
+            { EnsureDirectoryExist, "Ensure the directory {0} exists" },
+            { CreateSampleCsvFile, "Create sample csv file" },
+            { InitCraftTables, "Init DIY Item crafting recipes from csv files" },
+            { InitItemNameTable, "Init item names" },
+            { FormulaIdAlreadyExistInOtherCsv, "The Crafting recipe [{0}] already exist in other csv table (*.craft.csv), this one in {1} invalid" },
+            { FormulaIdAlreadyExistInRawList, "The Crafting recipe [{0}] already exist in game recipe list" },
         };
         
         // 简中
         private static Dictionary<string, string> cnLocalizeDictionary = new Dictionary<string, string>()
         {
-            { "ItemCraftRecipeNotFound", "无法合成道具：{0}" },
-        };
-        
-        // 繁中
-        private static Dictionary<string, string> tcLocalizeDictionary = new Dictionary<string, string>()
-        {
-            { "ItemCraftRecipeNotFound", "無法合成道具：{0}" },
+            { ModName, "[更多DIY配方]" },
+            { EnsureDirectoryExist, "确保目录 {0} 存在" },
+            { CreateSampleCsvFile, "创建示例csv文件" },
+            { InitCraftTables, "从csv文件初始化DIY配方" },
+            { InitItemNameTable, "初始化道具名称" },
+            { FormulaIdAlreadyExistInOtherCsv, "其他DIY配方表（*.craft.csv）中已存在同名配方：{0}, {1} 中该配方无效" },
+            { FormulaIdAlreadyExistInRawList, "游戏原配方列表中已存在同名配方：[{0}], 该自定义配方无效" },
         };
         
         // 日语
         private static Dictionary<string, string> jpLocalizeDictionary = new Dictionary<string, string>()
         {
-            { "ItemCraftRecipeNotFound", "アイテム（{0}）を合成できません" },
+            { ModName, "[合成レシピモジュール]" },
+            { EnsureDirectoryExist, "ディレクトリ {0} が存在することを確認する" },
+            { CreateSampleCsvFile, "サンプルCSVファイルを作成する" },
+            { InitCraftTables, "csvフェイルからDIYレシピを初期化する" },
+            { InitItemNameTable, "アイテムの名前を初期化する" },
+            { FormulaIdAlreadyExistInOtherCsv, "他のDIYレシピ表（*.craft.csv）にすでに同名のレシピがあります：{0}、{1}ではそのレシピは無効です" },
+            { FormulaIdAlreadyExistInRawList, "ゲームの元のレシピリストには同名のレシピが既に存在します：[{0}]、このカスタムレシピは無効です" },
         };
 
         #endregion
@@ -48,7 +82,7 @@ namespace ItemCraft
         /// </summary>
         public static void Initialize()
         {
-            UnityEngine.Debug.Log("【本地化工具】初始化道具名称");
+            UnityEngine.Debug.Log(Localize(InitItemNameTable));
             // 由于无法直接通过道具id获取其本地化名称，故而采取此下策：预先缓存所有道具的本地化名称
             itemNameTable = new Dictionary<int, string>();
             // var allItemIds = ItemStatsSystem.ItemAssetsCollection.GetAllTypeIds(new ItemStatsSystem.ItemFilter());
@@ -75,10 +109,8 @@ namespace ItemCraft
                     break;
                 case UnityEngine.SystemLanguage.Chinese:
                 case UnityEngine.SystemLanguage.ChineseSimplified:
-                    dict = cnLocalizeDictionary;
-                    break;
                 case UnityEngine.SystemLanguage.ChineseTraditional:
-                    dict = tcLocalizeDictionary;
+                    dict = cnLocalizeDictionary;
                     break;
                 // 未列出的语言默认采用英语
                 default:
@@ -88,7 +120,7 @@ namespace ItemCraft
 
             if (dict.TryGetValue(key, out var value))
             {
-                return string.Format(value, args);
+                return $"{dict[ModName]} {string.Format(value, args)}";
             }
             else
             {

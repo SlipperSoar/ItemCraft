@@ -17,7 +17,7 @@ namespace ItemCraft
 
         public static void Initialize()
         {
-            UnityEngine.Debug.Log("【合成工具】初始化所有合成表");
+            UnityEngine.Debug.Log(LocalizeUtil.Localize(LocalizeUtil.InitCraftTables));
             
             // 首先保证合成配方列表已初始化完毕
             var formulaCollectionInstance = CraftingFormulaCollection.Instance;
@@ -28,7 +28,7 @@ namespace ItemCraft
             // 加载所有合成表
             var currentDir = GetModPath();
             LogItemTable2File(currentDir);
-            LogFormulaTags2File(currentDir);
+            LogFormulaInfos2File(currentDir);
             var configFiles = GetAllCraftTableConfigFiles(currentDir);
             foreach (var configFile in configFiles)
             {
@@ -56,7 +56,7 @@ namespace ItemCraft
                 if (formulaList.Any(x => x.id == additiveCraftFormula.Key))
                 {
                     // 与原有配方出现id重复
-                    UnityEngine.Debug.LogError($"【合成工具】原配方列表中已存在同名配方：{additiveCraftFormula.Key}, 该自定义配方无效");
+                    UnityEngine.Debug.LogError(LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInRawList, additiveCraftFormula.Key));
                 }
                 else
                 {
@@ -114,7 +114,7 @@ namespace ItemCraft
                     var tags = content["tags"].Split(',');
                     var formulaId = content["id"];
                     
-                    UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
+                    // UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
                     var recipe = new CraftingFormula
                     {
                         id = formulaId,
@@ -131,7 +131,7 @@ namespace ItemCraft
                     // 避免配置配方出现id重复的情况
                     if (!craftTable.TryAdd(formulaId, recipe))
                     {
-                        UnityEngine.Debug.LogError($"【合成工具】已存在同名配方：{formulaId}, {filePath} 中该配方无效");
+                        UnityEngine.Debug.LogError(LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInOtherCsv, formulaId, filePath));
                     }
                 }
                 catch (Exception e)
@@ -144,8 +144,7 @@ namespace ItemCraft
         
         private static string[] GetAllCraftTableConfigFiles(string path)
         {
-            UnityEngine.Debug.Log($"【合成工具】获取当前目录下所有合成表配方数据，path：{path}");
-            // 所有的 合成配方 的配置文件都需要以 “.craft.txt” 结尾，即结尾为".craft"的 txt 文件
+            // 所有的 合成配方 的配置文件都需要以 “.craft.csv” 结尾，即结尾为".craft"的 csv 文件
             var configFiles = Directory.GetFiles(path, "*.craft.csv");
             return configFiles;
         }
@@ -156,11 +155,12 @@ namespace ItemCraft
             var currentDir = Directory.GetCurrentDirectory();
             currentDir = Path.Combine(currentDir, @"Duckov_Data\Mods\ItemCraft");
             // 确保目录都存在
-            UnityEngine.Debug.Log($"【合成工具】确保目录存在：{currentDir}");
+            UnityEngine.Debug.Log(LocalizeUtil.Localize(LocalizeUtil.EnsureDirectoryExist, currentDir));
             if (!Directory.Exists(currentDir))
             {
                 // 创建目录时顺带创建一个示例的csv
                 Directory.CreateDirectory(currentDir);
+                UnityEngine.Debug.Log(LocalizeUtil.Localize(LocalizeUtil.CreateSampleCsvFile));
                 var sampleCsvFilePath = Path.Combine(currentDir, "sample.craft.csv");
                 var sampleCsvFileContent = @"
 id	target	money	materials	unlockByDefault	tags	_note
@@ -189,7 +189,7 @@ Food_Cake	132:1	0	84:1,105:1,68:1	true	Cook	烹饪蛋糕";
             System.IO.File.WriteAllText(Path.Combine(folderPath, "ItemInfo.txt"), itemInfoContents.ToString());
         }
         
-        private static void LogFormulaTags2File(string folderPath)
+        private static void LogFormulaInfos2File(string folderPath)
         {
             // 将所有的配方信息输出到本地文件以便设计合成表
             var contents = new System.Text.StringBuilder();
