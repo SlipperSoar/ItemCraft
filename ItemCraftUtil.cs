@@ -23,7 +23,7 @@ namespace ItemCraft
             var formulaCollectionInstance = CraftingFormulaCollection.Instance;
             var formulas = formulaCollectionInstance.Entries;
             
-            var additiveCraftFormulas = new List<CraftingFormula>();
+            var additiveCraftFormulas = new Dictionary<string, CraftingFormula>();
 
             // 加载所有合成表
             var currentDir = GetModPath();
@@ -50,12 +50,29 @@ namespace ItemCraft
                 return;
             }
 
-            formulaList.AddRange(additiveCraftFormulas);
+            formulaList.Capacity = formulaList.Count + additiveCraftFormulas.Count;
+            foreach (var additiveCraftFormula in additiveCraftFormulas)
+            {
+                if (formulaList.Any(x => x.id == additiveCraftFormula.Key))
+                {
+                    // 与原有配方出现id重复
+                    UnityEngine.Debug.LogError($"【合成工具】原配方列表中已存在同名配方：{additiveCraftFormula.Key}, 该自定义配方无效");
+                }
+                else
+                {
+                    formulaList.Add(additiveCraftFormula.Value);
+                }
+            }
         }
 
-        public static void OnItemUsed(Item item, object obj)
+        public static void OnItemCrafted(CraftingFormula formula, Item item)
         {
-            UnityEngine.Debug.Log($"【道具使用】 id: {item.TypeID}, name: {item.DisplayName}");
+            UnityEngine.Debug.Log($"【合成工具】合成成功：{item.DisplayName} by 配方id: {formula.id}");
+        }
+
+        public static void OnFormulaUnlocked(string formulaId)
+        {
+            UnityEngine.Debug.Log($"【合成工具】解锁配方：{formulaId}");
         }
 
         #endregion
@@ -66,7 +83,7 @@ namespace ItemCraft
         /// 从文件加载合成表
         /// </summary>
         /// <param name="filePath">合成表文件路径</param>
-        private static void LoadCraftTableFromFile(string filePath, List<CraftingFormula> craftTable)
+        private static void LoadCraftTableFromFile(string filePath, Dictionary<string, CraftingFormula> craftTable)
         {
             var csvContents = CsvUtil.ReadCSV(filePath);
             if (csvContents == null)
@@ -95,11 +112,12 @@ namespace ItemCraft
                         return (int.Parse(split[0]), long.Parse(split[1]));
                     }).ToArray();
                     var tags = content["tags"].Split(',');
+                    var formulaId = content["id"];
                     
                     UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
                     var recipe = new CraftingFormula
                     {
-                        id = content["id"],
+                        id = formulaId,
                         cost = new Cost(costMoney, materialItems),
                         result = new CraftingFormula.ItemEntry
                         {
@@ -109,7 +127,12 @@ namespace ItemCraft
                         unlockByDefault = bool.Parse(content["unlockByDefault"].ToLower()),
                         tags = tags
                     };
-                    craftTable.Add(recipe);
+                    
+                    // 避免配置配方出现id重复的情况
+                    if (!craftTable.TryAdd(formulaId, recipe))
+                    {
+                        UnityEngine.Debug.LogError($"【合成工具】已存在同名配方：{formulaId}, {filePath} 中该配方无效");
+                    }
                 }
                 catch (Exception e)
                 {
@@ -168,15 +191,15 @@ Food_Cake	132:1	0	84:1,105:1,68:1	true	Cook	烹饪蛋糕";
         
         private static void LogFormulaTags2File(string folderPath)
         {
-            // 将所有的道具信息输出到本地文件以便设计合成表
+            // 将所有的配方信息输出到本地文件以便设计合成表
             var contents = new System.Text.StringBuilder();
-            var formulaTags = CraftingFormulaCollection.Instance.Entries.Select(x => x.tags).ToList();
-            foreach (var tags in formulaTags)
+            contents.AppendLine("id\ttags");
+            foreach (var formula in CraftingFormulaCollection.Instance.Entries)
             {
-                contents.AppendLine($"{string.Join(",", tags)}");
+                contents.AppendLine($"{formula.id}\t{string.Join(",", formula.tags)}");
             }
             
-            System.IO.File.WriteAllText(Path.Combine(folderPath, "FormulaTags.txt"), contents.ToString());
+            System.IO.File.WriteAllText(Path.Combine(folderPath, "FormulaInfomations.txt"), contents.ToString());
         }
 
         #endregion

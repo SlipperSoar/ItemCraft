@@ -14,7 +14,8 @@ namespace ItemCraft
 
         private void OnEnable()
         {
-            Item.onUseStatic += ItemCraftUtil.OnItemUsed;
+            CraftingManager.OnItemCrafted += ItemCraftUtil.OnItemCrafted;
+            CraftingManager.OnFormulaUnlocked += ItemCraftUtil.OnFormulaUnlocked;
         }
 
         private void Start()
@@ -27,7 +28,8 @@ namespace ItemCraft
         
         private void OnDisable()
         {
-            Item.onUseStatic -= ItemCraftUtil.OnItemUsed;
+            CraftingManager.OnItemCrafted -= ItemCraftUtil.OnItemCrafted;
+            CraftingManager.OnFormulaUnlocked -= ItemCraftUtil.OnFormulaUnlocked;
         }
 
         #endregion
