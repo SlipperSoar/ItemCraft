@@ -56,7 +56,9 @@ namespace ItemCraft
                 if (formulaList.Any(x => x.id == additiveCraftFormula.Key))
                 {
                     // 与原有配方出现id重复
-                    UnityEngine.Debug.LogError(LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInRawList, additiveCraftFormula.Key));
+                    var errorMsg = LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInRawList,
+                        additiveCraftFormula.Key);
+                    UnityEngine.Debug.LogWarning(errorMsg);
                 }
                 else
                 {
@@ -131,12 +133,17 @@ namespace ItemCraft
                     // 避免配置配方出现id重复的情况
                     if (!craftTable.TryAdd(formulaId, recipe))
                     {
-                        UnityEngine.Debug.LogError(LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInOtherCsv, formulaId, filePath));
+                        var errorMsg = LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInOtherCsv, formulaId, filePath);
+                        UnityEngine.Debug.LogWarning(errorMsg);
                     }
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.LogException(e);
+                    // 不暴露调用栈，只显示错误信息
+                    var errorMsg = LocalizeUtil.Localize(LocalizeUtil.InvalidFormulaConfig,
+                        string.Join(",", content.Select(kvp => $"{kvp.Key}={kvp.Value}")), filePath);
+                    UnityEngine.Debug.LogWarning(errorMsg);
+                    // UnityEngine.Debug.LogException(e);
                     continue;
                 }
             }
