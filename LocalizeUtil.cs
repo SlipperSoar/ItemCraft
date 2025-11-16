@@ -107,6 +107,15 @@ namespace ItemCraft
             }
 
             // 尝试加载Mod 物品
+            LoadModItemsInfo();
+        }
+
+        /// <summary>
+        /// 加载mod物品信息（id & name）<br/>
+        /// 该操作是为了能在输出日志时显示mod物品名称，非必要
+        /// </summary>
+        public static void LoadModItemsInfo()
+        {
             var dynamicEntries = typeof(ItemStatsSystem.ItemAssetsCollection).GetField("dynamicDic",
                 BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
             if (dynamicEntries == null)
@@ -124,7 +133,12 @@ namespace ItemCraft
                 {
                     foreach (var entry in dynamicDic.Select(dynamicEntry => dynamicEntry.Value))
                     {
-                        itemNameTable.Add(entry.typeID, entry.MetaData.DisplayName);
+                        // 如果出现mod物品重复，以后来的为准（与游戏内逻辑相同，即同id覆盖）
+                        // 即以mod启用顺序为准
+                        // 将该mod放在物品mod之后即可获得与实际生效相同的mod物品
+                        // 物品mod放在该mod之后，则无法在初始化时获取其信息，需要在这里以同id覆盖的方式同步于游戏逻辑得到最终的物品信息
+                        // itemNameTable.TryAdd(entry.typeID, entry.MetaData.DisplayName);
+                        itemNameTable[entry.typeID] = entry.MetaData.DisplayName;
                     }
                 }
             }
@@ -132,7 +146,7 @@ namespace ItemCraft
 
         public static string LocalizeItem(int itemId)
         {
-            return itemNameTable.TryGetValue(itemId, out var name) ? name : string.Empty;
+            return itemNameTable.TryGetValue(itemId, out var name) ? name : $"id[{itemId}]";
         }
 
         public static string Localize(string key, params object[] args)

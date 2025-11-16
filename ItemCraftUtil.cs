@@ -13,6 +13,13 @@ namespace ItemCraft
     /// </summary>
     public static class ItemCraftUtil
     {
+        #region Properties
+
+        private static Dictionary<string, CraftingFormula> _additiveCraftFormulas =
+            new Dictionary<string, CraftingFormula>();
+
+        #endregion
+        
         #region Public Methods
 
         public static void Initialize()
@@ -23,7 +30,7 @@ namespace ItemCraft
             var formulaCollectionInstance = CraftingFormulaCollection.Instance;
             var formulas = formulaCollectionInstance.Entries;
             
-            var additiveCraftFormulas = new Dictionary<string, CraftingFormula>();
+            _additiveCraftFormulas = new Dictionary<string, CraftingFormula>();
 
             // 加载所有合成表
             var currentDir = GetModPath();
@@ -32,40 +39,59 @@ namespace ItemCraft
             var configFiles = GetAllCraftTableConfigFiles(currentDir);
             foreach (var configFile in configFiles)
             {
-                LoadCraftTableFromFile(configFile, additiveCraftFormulas);
+                LoadCraftTableFromFile(configFile, _additiveCraftFormulas);
             }
 
             // 修改合成表列表
-            var listField = typeof(CraftingFormulaCollection).GetField("list", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (listField == null)
-            {
-                UnityEngine.Debug.LogError("【合成工具】无法找到 CraftingFormulaCollection.list 字段");
-                return;
-            }
+            AddCraftFormulas();
+        }
 
-            var formulaList = (List<CraftingFormula>)listField.GetValue(formulaCollectionInstance);
-            if (formulaList == null)
-            {
-                UnityEngine.Debug.LogError("【合成工具】formulaList 为 null");
-                return;
-            }
+        /// <summary>
+        /// 添加自定义合成配方。重复id的配方会被忽略<br/>
+        /// <b>[Attention!]</b> 建议将所有配方一口气加进来，不要频繁调用，因为该方法用到的反射
+        /// </summary>
+        /// <param name="formulas">要添加的所有配方</param>
+        public static void AddCraftFormulas(List<CraftingFormula> formulas)
+        {
+            var formulaList = GetFormulaListInstance();
 
-            formulaList.Capacity = formulaList.Count + additiveCraftFormulas.Count;
-            foreach (var additiveCraftFormula in additiveCraftFormulas)
+            formulaList.Capacity = formulaList.Count + formulas.Count;
+            foreach (var additiveCraftFormula in formulas)
             {
-                if (formulaList.Any(x => x.id == additiveCraftFormula.Key))
+                // 检查配方中的物品是否存在
+                var notExistItems = CheckItemExist(additiveCraftFormula);
+
+                // 如果存在物品不存在的，跳过该配方
+                if (notExistItems.Any())
+                {
+                    UnityEngine.Debug.LogWarning(LocalizeUtil.Localize(LocalizeUtil.ItemDontExist, additiveCraftFormula.id, string.Join(",", notExistItems)));
+                    continue;
+                }
+
+                if (_additiveCraftFormulas.ContainsKey(additiveCraftFormula.id))
+                {
+                    // 与已有配方出现id重复
+                    var errorMsg = LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInOtherCsv,
+                        additiveCraftFormula.id, "\'Third Mod\'");
+                    UnityEngine.Debug.LogWarning(errorMsg);
+                }
+                else if (formulaList.Any(x => x.id == additiveCraftFormula.id))
                 {
                     // 与原有配方出现id重复
                     var errorMsg = LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInRawList,
-                        additiveCraftFormula.Key);
+                        additiveCraftFormula.id);
                     UnityEngine.Debug.LogWarning(errorMsg);
                 }
                 else
                 {
-                    formulaList.Add(additiveCraftFormula.Value);
+                    // 添加进列表，以便区分游戏内置配方和mod配方
+                    _additiveCraftFormulas.Add(additiveCraftFormula.id, additiveCraftFormula);
+                    formulaList.Add(additiveCraftFormula);
                 }
             }
         }
+
+        #region Event
 
         public static void OnItemCrafted(CraftingFormula formula, Item item)
         {
@@ -79,8 +105,69 @@ namespace ItemCraft
 
         #endregion
 
-        #region Private Methods
+        #endregion
 
+        #region Private Methods
+        
+        private static void AddCraftFormulas()
+        {
+            var formulaList = GetFormulaListInstance();
+            formulaList.Capacity = formulaList.Count + _additiveCraftFormulas.Count;
+            var invalidFormulas = new List<string>();
+            foreach (var additiveCraftFormula in _additiveCraftFormulas)
+            {
+                // 检查配方中的物品是否存在
+                var notExistItems = CheckItemExist(additiveCraftFormula.Value);
+
+                // 如果存在物品不存在的，跳过该配方
+                if (notExistItems.Any())
+                {
+                    invalidFormulas.Add(additiveCraftFormula.Key);
+                    UnityEngine.Debug.LogWarning(LocalizeUtil.Localize(LocalizeUtil.ItemDontExist, additiveCraftFormula.Key, string.Join(",", notExistItems)));
+                    continue;
+                }
+                
+                if (formulaList.Any(x => x.id == additiveCraftFormula.Key))
+                {
+                    // 与原有配方出现id重复
+                    invalidFormulas.Add(additiveCraftFormula.Key);
+                    var errorMsg = LocalizeUtil.Localize(LocalizeUtil.FormulaIdAlreadyExistInRawList,
+                        additiveCraftFormula.Key);
+                    UnityEngine.Debug.LogWarning(errorMsg);
+                }
+                else
+                {
+                    formulaList.Add(additiveCraftFormula.Value);
+                }
+            }
+
+            // 去掉无效的配方
+            foreach (var invalidFormula in invalidFormulas)
+            {
+                _additiveCraftFormulas.Remove(invalidFormula);
+            }
+        }
+
+        private static List<CraftingFormula> GetFormulaListInstance()
+        {
+            var listField = typeof(CraftingFormulaCollection).GetField("list", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (listField == null)
+            {
+                UnityEngine.Debug.LogError("【合成工具】无法找到 CraftingFormulaCollection.list 字段");
+                return null;
+            }
+
+            var formulaCollectionInstance = CraftingFormulaCollection.Instance;
+            var formulaList = (List<CraftingFormula>)listField.GetValue(formulaCollectionInstance);
+            if (formulaList == null)
+            {
+                UnityEngine.Debug.LogError("【合成工具】formulaList 为 null");
+                return null;
+            }
+            
+            return formulaList;
+        }
+        
         /// <summary>
         /// 从文件加载合成表
         /// </summary>
@@ -115,30 +202,7 @@ namespace ItemCraft
                     }).ToArray();
                     var tags = content["tags"].Split(',');
                     var formulaId = content["id"];
-
-                    var notExistItems = new List<int>();
-                    // 检查配方中的物品是否存在
-                    if (!ItemStatsSystem.ItemAssetsCollection.GetPrefab(targetItemId))
-                    {
-                        notExistItems.Add(targetItemId);
-                    }
-
-                    foreach (var valueTuple in materialItems)
-                    {
-                        if (!ItemStatsSystem.ItemAssetsCollection.GetPrefab(valueTuple.Item1))
-                        {
-                            notExistItems.Add(valueTuple.Item1);
-                        }
-                    }
-
-                    // 如果存在物品不存在的，跳过该配方
-                    if (notExistItems.Any())
-                    {
-                        UnityEngine.Debug.LogWarning(LocalizeUtil.Localize(LocalizeUtil.ItemDontExist, formulaId, string.Join(",", notExistItems)));
-                        continue;
-                    }
                     
-                    // UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
                     var recipe = new CraftingFormula
                     {
                         id = formulaId,
@@ -152,6 +216,7 @@ namespace ItemCraft
                         tags = tags
                     };
                     
+                    // UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
                     // 避免配置配方出现id重复的情况
                     if (!craftTable.TryAdd(formulaId, recipe))
                     {
@@ -169,6 +234,32 @@ namespace ItemCraft
                     continue;
                 }
             }
+        }
+
+        /// <summary>
+        /// 检查配方中物品是否存在
+        /// </summary>
+        /// <param name="formula">配方信息</param>
+        /// <returns>有物品不存在时为false</returns>
+        private static List<int> CheckItemExist(CraftingFormula formula)
+        {
+            var notExistItems = new List<int>();
+            // 检查配方中的物品是否存在
+            // 注意：使用GetPrefab检查是为了能够动态兼容后续又添加进来的mod物品
+            if (!ItemStatsSystem.ItemAssetsCollection.GetPrefab(formula.result.id))
+            {
+                notExistItems.Add(formula.result.id);
+            }
+            
+            foreach (var itemEntry in formula.cost.items)
+            {
+                if (!ItemStatsSystem.ItemAssetsCollection.GetPrefab(itemEntry.id))
+                {
+                    notExistItems.Add(itemEntry.id);
+                }
+            }
+
+            return notExistItems;
         }
         
         private static string[] GetAllCraftTableConfigFiles(string path)
