@@ -47,3 +47,15 @@
 - 如果出现配方未生效问题，请安装控制台mod查看日志信息，其中会输出出错信息
   - 重复配方id：输出具体重复的配方id和对应的文件名
   - 配置错误：会输出具体报错信息和对应内容
+
+### 其他MOD内如何通过该MOD添加配方
+
+- 引用该MOD的dll作为依赖
+- 调用方法`ItemCraft.ItemCraftUtil.AddCraftFormulas(List<CraftingFormula> formulas)`
+  - 结构体`CraftingFormula`是官方的配方结构体
+  - `id`不可与游戏内配方重复，也不可与其他mod配方重复（**除非你的MOD先加载**）
+  - `result`是合成的目标物品，其中的物品`id`不可不存在
+  - `Cost.items`是合成需要的材料，其中的物品`id`不可不存在
+- （可选）调用方法`ItemCraft.LocalizeUtil.LoadModItemsInfo()`来（重新）初始化MOD相关物品信息，以便需要输出日志时可以显示其名称而不是id
+- （可选）调用方法`ItemCraft.LocalizeUtil.Localize(string key, params object[] args)`来本地化显示一些日志，key可查看`ItemCraft.LocalizeUtil`的常量
+- （可选）调用方法`ItemCraft.LocalizeUtil.LocalizeItem(int itemId)`来通过传递物品id从已缓存的物品信息中获取本地化物品名称（当然也可以通过官方的`ItemStatsSystem.ItemAssetsCollection.GetPrefab(int typeId)`来获取整个物品信息）
