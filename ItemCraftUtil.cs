@@ -175,6 +175,8 @@ namespace ItemCraft
         private static void LoadCraftTableFromFile(string filePath, Dictionary<string, CraftingFormula> craftTable)
         {
             var csvContents = CsvUtil.ReadCSV(filePath);
+            // 分别是 物品分隔符 和 数量分隔符
+            var (itemSep, numSep) = (csvContents.Separator1, csvContents.Separator2);
             if (csvContents == null)
             {
                 return;
@@ -190,17 +192,17 @@ namespace ItemCraft
                     // 官方消耗道具格式：以‘,’分割，每个道具是 name:num，即 名字:数量，这里为初始化方便将名字改为id，即id:num
                     // 示例：
                     // 1:2,2:1,3:1,4:1
-                    var materials = content["materials"].Split(',');
-                    var targetItem = content["target"].Split(':');
+                    var materials = content["materials"].Split(itemSep);
+                    var targetItem = content["target"].Split(numSep);
                     var targetItemId = int.Parse(targetItem[0]);
                     var targetItemAmount = int.Parse(targetItem[1]);
                     var costMoney = int.Parse(content["money"]);
                     var materialItems = materials.Select(str =>
                     {
-                        var split = str.Split(':');
+                        var split = str.Split(numSep);
                         return (int.Parse(split[0]), long.Parse(split[1]));
                     }).ToArray();
-                    var tags = content["tags"].Split(',');
+                    var tags = content["tags"].Split(itemSep);
                     var formulaId = content["id"];
                     
                     var recipe = new CraftingFormula
@@ -215,8 +217,11 @@ namespace ItemCraft
                         unlockByDefault = bool.Parse(content["unlockByDefault"].ToLower()),
                         tags = tags
                     };
-                    
-                    // UnityEngine.Debug.Log($"【合成工具】初始化合成配方：{string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}"))} + ￥{costMoney} => {LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
+
+                    var log = LocalizeUtil.Localize(LocalizeUtil.InitCraftRecipe,
+                        string.Join("+", materialItems.Select(x => $"{LocalizeUtil.LocalizeItem(x.Item1)}*{x.Item2}")),
+                        costMoney, $"{LocalizeUtil.LocalizeItem(targetItemId)}*{targetItemAmount}");
+                    UnityEngine.Debug.Log(log);
                     // 避免配置配方出现id重复的情况
                     if (!craftTable.TryAdd(formulaId, recipe))
                     {
